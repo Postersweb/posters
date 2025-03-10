@@ -21,7 +21,7 @@
         </div>
     </div>
     <div class="post-content" id="postContent{{ post.id }}">
-        {{ post.content }}
+        {{ post.content|safe }}
         {% if post.image %}
         <img src="{{ post.image.url }}" alt="Post image" class="post-image">
         {% endif %}
@@ -176,4 +176,28 @@
             }
         });
     });
+
+    function formatTextPreview(textarea) {
+            const preview = document.createElement('div');
+            preview.style.cssText = `
+            position: absolute;
+            top: ${textarea.offsetTop}px;
+            left: ${textarea.offsetLeft}px;
+            width: ${textarea.offsetWidth}px;
+            height: ${textarea.offsetHeight}px;
+            padding: ${getComputedStyle(textarea).padding};
+            background: transparent;
+            pointer-events: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-color);
+        `;
+
+            let text = textarea.value;
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            preview.innerHTML = text;
+
+            return preview;
+        }
+
 </script>

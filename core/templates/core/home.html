@@ -327,6 +327,7 @@
             overflow-wrap: break-word;
             word-wrap: break-word;
             word-break: break-word;
+            line-height: 1.4;
         }
 
         .post-image {
@@ -495,7 +496,7 @@
         .mobile-content-filter-nav {
             display: none;
             position: fixed;
-            top: 50px;
+            top: 48px;
             left: 0;
             width: 100%;
             height: 45px;
@@ -961,7 +962,6 @@
                             likesCount.textContent = data.likes_count;
                             this.classList.toggle('liked', data.liked);
                             
-                            // Update the like icon based on the liked state
                             if (data.liked) {
                                 likeIcon.src = "/media/icons&art/likeCF.png";
                             } else {

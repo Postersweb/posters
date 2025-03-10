@@ -64,17 +64,29 @@ def get_preview_data(url):
     except:
         return None
     
+
 from django.core.paginator import Paginator
 
+def format_content(content):
+    import re
+    content = re.sub(r'\*\*(.*?)\*\*', lambda m: '<strong style="display:inline">' + m.group(1) + '</strong>', content)
+    content = content.replace('\n', '<br>')
+    lines = content.split('<br>')
+    for i in range(len(lines)):
+        lines[i] = ' '.join(lines[i].split())
+    content = '<br>'.join(lines)
+    return f'<span style="white-space:normal">{content}</span>'
+      
 @login_required
 def home(request):
     if request.method == 'POST':
-        content = request.POST.get('content', '')
+        content = request.POST.get('content', '').strip()
         image = request.FILES.get('image')
         if content or image:
             urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', content)
             clean_content = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', content).strip()
-            post = Post(user=request.user, content=clean_content, image=image)
+            formatted_content = format_content(clean_content) if clean_content else ' '
+            post = Post(user=request.user, content=formatted_content, image=image)
             if urls:
                 preview_data = get_preview_data(urls[0])
                 if preview_data:
@@ -158,10 +170,11 @@ def add_comment(request, post_id):
         if content or image:
             urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', content)
             clean_content = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', content).strip()
+            formatted_content = format_content(clean_content) if clean_content else ' '
             comment = Comment(
                 post=post,
                 user=request.user,
-                content=clean_content,
+                content=formatted_content,
                 image=image
             )
 
@@ -267,6 +280,35 @@ def delete_post(request, post_id):
         return redirect('home')
     return HttpResponseNotAllowed(['POST'])
 
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    if request.user != comment.user:
+        return redirect('post_detail', post_id=comment.post.id)
+        
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        image = request.FILES.get('image')
+        if content or image:
+            urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', content)
+            clean_content = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', content).strip()
+            formatted_content = format_content(clean_content) if clean_content else ' '
+            comment.content = formatted_content
+            if image:
+                comment.image = image
+            comment.save()
+        return JsonResponse({'success': True, 'content': formatted_content})
+    return HttpResponseNotAllowed(['POST'])
+
+@login_required
+def delete_comment(request, comment_id):
+    if request.method == 'POST':
+        comment = get_object_or_404(Comment, id=comment_id)
+        post_id = comment.post.id
+        if request.user == comment.user:
+            comment.delete()
+        return redirect('post_detail', post_id=post_id)
+    return HttpResponseNotAllowed(['POST'])
+
 def sobre_view(request):
     return render(request, 'core/sobrep.html')
-

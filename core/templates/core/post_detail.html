@@ -204,6 +204,7 @@
             overflow-wrap: break-word;
             word-wrap: break-word;
             word-break: break-word;
+            line-height: 1.4;
         }
 
         .post-image {
@@ -448,6 +449,7 @@
         }
 
 
+
         @media (min-width: 1600px) {
             .container {
                 grid-template-columns: 350px 1fr 350px;
@@ -596,14 +598,27 @@
         <main class="main-content">
             <article class="post">
                 <div class="post-header">
-                    <a href="{% url 'profile' username=post.user.username %}" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
-                        <img src="{{ post.user.avatar }}" alt="{{ post.user.username }}" class="avatar">
-                        <strong>{{ post.user.username }}</strong>
-                    </a>
-                    <span style="margin-left: 10px; font-size: 0.8em; color: #a7b0b99a;">{{ post.get_relative_time }}</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div style="display: flex; align-items: center;">
+                            <a href="{% url 'profile' username=post.user.username %}" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+                                <img src="{{ post.user.avatar }}" alt="{{ post.user.username }}" class="avatar">
+                                <strong>{{ post.user.username }}</strong>
+                            </a>
+                            <span style="margin-left: 10px; font-size: 0.8em; color: #a7b0b99a;">{{ post.get_relative_time }}</span>
+                        </div>
+                        {% if request.user == post.user %}
+                        <div class="post-menu" style="position: relative;">
+                            <button onclick="togglePostMenu({{ post.id }})" class="menu-btn" style="background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 20px;">⋮</button>
+                            <div id="postMenu{{ post.id }}" class="post-menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background:rgba(38, 38, 38, 1);; border-radius: 3px; box-shadow: 0 5px 5px rgba(0,0,0,0.0); z-index: 1000;">
+                                <button onclick="editPost({{ post.id }})" style="display: block; width: 100%; padding: 8px 15px; border: none; background: none; color: var(--text-color); cursor: pointer; text-align: left;">Editar</button>
+                                <button onclick="deletePost({{ post.id }})" style="display: block; width: 100%; padding: 8px 15px; border: none; background: none; color: #ff4444; cursor: pointer; text-align: left;">Borrar</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="post-content">
-                    {{ post.content }}
+                    {{ post.content|safe }}
                     {% if post.image %}
                     <img src="{{ post.image.url }}" alt="Post image" class="post-image">
                     {% endif %}
@@ -661,16 +676,29 @@
 
                 <h3 style="margin-bottom: 15px;">Comentarios</h3>
                 {% for comment in post.comments.all %}
-                <div class="comment">
+                <div class="comment" data-comment-id="{{ comment.id }}">
                     <div class="comment-header">
-                        <a href="{% url 'profile' username=comment.user.username %}" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
-                            <img src="{{ comment.user.avatar }}" alt="{{ comment.user.username }}" class="avatar">
-                            <strong>{{ comment.user.username }}</strong>
-                        </a>
-                        <span style="margin-left: 10px; font-size: 0.8em; color: #a7b0b99a;">{{ comment.get_relative_time }}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <div style="display: flex; align-items: center;">
+                                <a href="{% url 'profile' username=comment.user.username %}" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+                                    <img src="{{ comment.user.avatar }}" alt="{{ comment.user.username }}" class="avatar">
+                                    <strong>{{ comment.user.username }}</strong>
+                                </a>
+                                <span style="margin-left: 10px; font-size: 0.8em; color: #a7b0b99a;">{{ comment.get_relative_time }}</span>
+                            </div>
+                            {% if request.user == comment.user %}
+                            <div class="comment-menu" style="position: relative;">
+                                <button onclick="toggleCommentMenu({{ comment.id }})" class="menu-btn" style="background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 20px;">⋮</button>
+                                <div id="commentMenu{{ comment.id }}" class="comment-menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background:rgba(38, 38, 38, 1);; border-radius: 3px; box-shadow: 0 5px 5px rgba(0,0,0,0.0); z-index: 1000;">
+                                    <button onclick="editComment({{ comment.id }})" style="display: block; width: 100%; padding: 8px 15px; border: none; background: none; color: var(--text-color); cursor: pointer; text-align: left;">Editar</button>
+                                    <button onclick="deleteComment({{ comment.id }})" style="display: block; width: 100%; padding: 8px 15px; border: none; background: none; color: #ff4444; cursor: pointer; text-align: left;">Borrar</button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="post-content">
-                        {{ comment.content }}
+                        {{ comment.content|safe }}
                         {% if comment.image %}
                         <img src="{{ comment.image.url }}" alt="Comment image" class="post-image">
                         {% endif %}
@@ -738,6 +766,208 @@
     </nav>
 
     <script>
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.post-menu') && !e.target.closest('.comment-menu')) {
+                document.querySelectorAll('.post-menu-dropdown, .comment-menu-dropdown').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
+        });
+
+        function togglePostMenu(postId) {
+            const menu = document.getElementById(`postMenu${postId}`);
+            document.querySelectorAll('.post-menu-dropdown, .comment-menu-dropdown').forEach(m => {
+                if (m !== menu) m.style.display = 'none';
+            });
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleCommentMenu(commentId) {
+            const menu = document.getElementById(`commentMenu${commentId}`);
+            document.querySelectorAll('.post-menu-dropdown, .comment-menu-dropdown').forEach(m => {
+                if (m !== menu) m.style.display = 'none';
+            });
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function editPost(postId) {
+            const contentDiv = document.querySelector('.post-content');
+            const currentContent = contentDiv.childNodes[0].textContent.trim();
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = currentContent;
+            textarea.style.width = '100%';
+            textarea.style.minHeight = '100px';
+            textarea.style.background = '#ffffff20';
+            textarea.style.border = 'none';
+            textarea.style.padding = '10px';
+            textarea.style.borderRadius = '5px';
+            textarea.style.color = 'var(--text-color)';
+            textarea.style.resize = 'vertical';
+
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Guardar';
+            saveButton.style.background = '#00b74a';
+            saveButton.style.color = 'white';
+            saveButton.style.border = 'none';
+            saveButton.style.padding = '8px 15px';
+            saveButton.style.borderRadius = '5px';
+            saveButton.style.marginTop = '10px';
+            saveButton.style.cursor = 'pointer';
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancelar';
+            cancelButton.style.background = '#ff4444';
+            cancelButton.style.color = 'white';
+            cancelButton.style.border = 'none';
+            cancelButton.style.padding = '8px 15px';
+            cancelButton.style.borderRadius = '5px';
+            cancelButton.style.marginTop = '10px';
+            cancelButton.style.marginLeft = '10px';
+            cancelButton.style.cursor = 'pointer';
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.appendChild(saveButton);
+            buttonContainer.appendChild(cancelButton);
+
+            const originalContent = contentDiv.innerHTML;
+            contentDiv.innerHTML = '';
+            contentDiv.appendChild(textarea);
+            contentDiv.appendChild(buttonContainer);
+
+            saveButton.onclick = function() {
+                const newContent = textarea.value;
+                fetch(`/post/${postId}/edit/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `content=${encodeURIComponent(newContent)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+            };
+
+            cancelButton.onclick = function() {
+                contentDiv.innerHTML = originalContent;
+            };
+
+            document.getElementById(`postMenu${postId}`).style.display = 'none';
+        }
+
+        function deletePost(postId) {
+            if (confirm('¿Seguro que lo querés borrar?')) {
+                fetch(`/post/${postId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                }).then(() => {
+                    window.location.href = '/home/';
+                });
+            }
+        }
+
+        function editComment(commentId) {
+            const comment = document.querySelector(`.comment[data-comment-id="${commentId}"]`) || 
+                            Array.from(document.querySelectorAll('.comment')).find(c => 
+                                c.querySelector(`.like-comment-btn[data-comment-id="${commentId}"]`));
+            
+            if (!comment) return;
+            
+            const contentDiv = comment.querySelector('.post-content');
+            const currentContent = contentDiv.innerHTML
+                .replace(/<strong>/g, '**')
+                .replace(/<\/strong>/g, '**')
+                .replace(/<br>/g, '\n') 
+                .replace(/&nbsp;/g, ' ')
+                .replace(/<[^>]*>/g, '');
+                
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = currentContent.trim();
+            textarea.style.width = '100%';
+            textarea.style.minHeight = '100px';
+            textarea.style.background = '#ffffff20';
+            textarea.style.border = 'none';
+            textarea.style.padding = '10px';
+            textarea.style.borderRadius = '5px';
+            textarea.style.color = 'var(--text-color)';
+            textarea.style.resize = 'vertical';
+
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Guardar';
+            saveButton.style.background = '#00b74a';
+            saveButton.style.color = 'white';
+            saveButton.style.border = 'none';
+            saveButton.style.padding = '8px 15px';
+            saveButton.style.borderRadius = '5px';
+            saveButton.style.marginTop = '10px';
+            saveButton.style.cursor = 'pointer';
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancelar';
+            cancelButton.style.background = '#ff4444';
+            cancelButton.style.color = 'white';
+            cancelButton.style.border = 'none';
+            cancelButton.style.padding = '8px 15px';
+            cancelButton.style.borderRadius = '5px';
+            cancelButton.style.marginTop = '10px';
+            cancelButton.style.marginLeft = '10px';
+            cancelButton.style.cursor = 'pointer';
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.appendChild(saveButton);
+            buttonContainer.appendChild(cancelButton);
+
+            const originalContent = contentDiv.innerHTML;
+            contentDiv.innerHTML = '';
+            contentDiv.appendChild(textarea);
+            contentDiv.appendChild(buttonContainer);
+
+            saveButton.onclick = function() {
+                const newContent = textarea.value;
+                fetch(`/comment/${commentId}/edit/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `content=${encodeURIComponent(newContent)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+            };
+
+            cancelButton.onclick = function() {
+                contentDiv.innerHTML = originalContent;
+            };
+
+            document.getElementById(`commentMenu${commentId}`).style.display = 'none';
+        }
+
+        function deleteComment(commentId) {
+            if (confirm('¿Seguro que lo querés borrar?')) {
+                fetch(`/comment/${commentId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        }
+
         document.getElementById('comment-image-input').addEventListener('change', function(event) {
             const input = event.target;
             const file = input.files[0];
@@ -789,7 +1019,6 @@
                     likesCount.textContent = data.likes_count;
                     this.classList.toggle('liked', data.liked);
                     
-                    // Update the like icon based on the liked state
                     if (data.liked) {
                         likeIcon.src = "/media/icons&art/likeCF.png";
                     } else {
@@ -831,7 +1060,6 @@
                         likesCount.textContent = data.likes_count;
                         this.classList.toggle('liked', data.liked);
                         
-                        // Update the like icon based on the liked state
                         if (data.liked) {
                             likeIcon.src = "/media/icons&art/likeCF.png";
                         } else {
