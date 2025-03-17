@@ -302,6 +302,13 @@
             transition: background 0.2s ease;
         }
 
+        .comment-input-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+
         .comment-submit:hover {
             transform: scale(1.02);
         }
@@ -328,9 +335,39 @@
             border-top: 1px solid var(--border-color);
         }
 
+
+        #comment-text-preview {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            color: var(--text-color);
+            white-space: pre-wrap;
+        }
+
+        .preview-toggle {
+            background: none;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 0.73em;
+            margin-left: auto;
+            margin-top: -5px;
+        }
+
+        .preview-toggle.active {
+            background: #ccccce;
+            color: rgb(0, 0, 0);
+        }
+
+
         .mobile-nav {
             display: none;
-            border: 0.2px solid var(--border-color);
+            border: none;
+            border-top: 1px solid var(--border-color);
         }
 
         .link-preview {
@@ -501,6 +538,7 @@
             .mobile-nav {
                 display: flex;
                 position: fixed;
+                height: 48px;
                 bottom: 0;
                 left: 0;
                 width: 100%;
@@ -509,10 +547,11 @@
                 justify-content: space-around;
                 z-index: 101;
             }
+
             .mobile-nav a {
                 color: var(--text-color);
                 text-decoration: none;
-                font-size: 24px;
+                font-size: 30px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -540,15 +579,16 @@
             }
 
             .mobile-icon.icon-poster {
-                width: 34px;
-                height: 34px;
-                margin-top: 13px;
+                width: 26px;
+                height: 26px;
             }
 
             .main-content {
                 margin-top: 48px;
                 margin-bottom: 70px;
             }
+
+
         }
     </style>
 </head>
@@ -660,13 +700,19 @@
                 <form method="post" action="{% url 'add_comment' post.id %}" class="comment-form" enctype="multipart/form-data" onsubmit="return validateForm(event)">
                     {% csrf_token %}
                     <textarea name="content" class="comment-input" placeholder="posteá un comentario..."></textarea>
+                    <div id="comment-text-preview"></div>
+                    <div class="comment-input-actions">
                     <div class="image-upload" style="margin-bottom: 15px;">
-                        <label for="comment-image-input" style="cursor: pointer; display: inline-block; margin-bottom: 8px;">
-                            📷 Agregar imagen
+                        <label for="comment-image-input" style="cursor: pointer; display: inline-block; margin-top: 3px;">
+                            📷
                         </label>
                         <input id="comment-image-input" type="file" name="image" accept="image/*" style="display: none;">
                         <span id="comment-file-name"></span>
                         <button type="button" id="comment-removeImageButton" style="display: none;">X</button>
+                    </div>
+                    <button type="button" id="togglePreview" class="preview-toggle"> 
+                        preview
+                    </button>
                     </div>
                     <div id="comment-preview-container" style="margin-bottom: 15px; display: none;">
                         <img id="comment-preview" src="#" alt="Previsualización de la imagen">
@@ -792,7 +838,13 @@
 
         function editPost(postId) {
             const contentDiv = document.querySelector('.post-content');
-            const currentContent = contentDiv.childNodes[0].textContent.trim();
+            const currentContent = contentDiv.innerHTML
+                .replace(/<strong[^>]*>/g, '**')
+                .replace(/<\/strong>/g, '**')
+                .replace(/<br>/g, '\n')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/<[^>]*>/g, '')
+                .trim();
             
             const textarea = document.createElement('textarea');
             textarea.value = currentContent;
@@ -882,15 +934,16 @@
             
             const contentDiv = comment.querySelector('.post-content');
             const currentContent = contentDiv.innerHTML
-                .replace(/<strong>/g, '**')
+                .replace(/<strong[^>]*>/g, '**')
                 .replace(/<\/strong>/g, '**')
-                .replace(/<br>/g, '\n') 
+                .replace(/<br>/g, '\n')
                 .replace(/&nbsp;/g, ' ')
-                .replace(/<[^>]*>/g, '');
+                .replace(/<[^>]*>/g, '')
+                .trim();
                 
             
             const textarea = document.createElement('textarea');
-            textarea.value = currentContent.trim();
+            textarea.value = currentContent;
             textarea.style.width = '100%';
             textarea.style.minHeight = '100px';
             textarea.style.background = '#ffffff20';
@@ -1079,6 +1132,40 @@
                 return false;
             }
             return true;
+        }
+
+
+        const postInput = document.querySelector('.comment-input');
+        const postTextPreview = document.getElementById('comment-text-preview');
+        const togglePreviewBtn = document.getElementById('togglePreview');
+        let previewEnabled = false;
+        togglePreviewBtn.addEventListener('click', function() {
+            previewEnabled = !previewEnabled;
+            togglePreviewBtn.classList.toggle('active');
+            if (!previewEnabled) {
+                postTextPreview.style.display = 'none';
+            } else if (postInput.value.trim().length > 0) {
+                updatePreview();
+            }
+        });
+
+        postInput.addEventListener('input', function() {
+            if (previewEnabled) {
+                updatePreview();
+            }
+        });
+
+        function updatePreview() {
+            let text = postInput.value;
+            if (text.trim().length > 0) {
+                let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong style="display:inline">$1</strong>');
+                formatted = formatted.replace(/\n/g, '<br>');
+                postTextPreview.innerHTML = formatted;
+                postTextPreview.style.display = 'block';
+            } else {
+                postTextPreview.innerHTML = '';
+                postTextPreview.style.display = 'none';
+            }
         }
     </script>
 </body>

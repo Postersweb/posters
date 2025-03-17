@@ -57,7 +57,6 @@
             border-left: 1px solid var(--border-color);
         }
 
-
         .site-logo, .site-logo:link, .site-logo:visited {
             font-size: 2.7rem;
             font-weight: bold;
@@ -152,7 +151,6 @@
             width: 100%;
             margin-top: 8px;
             position: relative; 
-            
         }
 
         .content-filter-nav {
@@ -169,7 +167,6 @@
             align-items: center;
             justify-content: center;
             margin: 0;
-            
         }
 
         .content-filter-item {
@@ -212,10 +209,16 @@
             border: 1px solid var(--border-color);
         }
 
+        .post-input-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .image-upload {
-            margin: 6px 0;
-            color: #ddd8d8;
-            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
 
         #file-name {
@@ -262,6 +265,32 @@
             color: var(--text-color);
             min-height: 100px;
             resize: none;
+        }
+
+        #post-text-preview {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            color: var(--text-color);
+            white-space: pre-wrap;
+        }
+
+        .preview-toggle {
+            background: none;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 0.73em;
+            margin-left: auto;
+        }
+
+        .preview-toggle.active {
+            background: #ccccce;
+            color: rgb(0, 0, 0);
         }
 
         .post-button {
@@ -394,7 +423,8 @@
 
         .mobile-nav {
             display: none;
-            border: 1px solid var(--border-color);
+            border: none;
+            border-top: 1px solid var(--border-color);
         }
 
         .link-preview {
@@ -415,7 +445,6 @@
         .preview-card img {
             width: 100%;
             height: 100px;
-            height: auto;
             object-fit: cover;
             max-height: 363px;
         }
@@ -510,6 +539,7 @@
             margin: 0;
         }
 
+
         @media (min-width: 1600px) {
             .container {
                 grid-template-columns: 350px 1fr 350px;
@@ -574,6 +604,7 @@
             .mobile-nav {
                 display: flex;
                 position: fixed;
+                height: 48px;
                 bottom: 0;
                 left: 0;
                 width: 100%;
@@ -586,7 +617,7 @@
             .mobile-nav a {
                 color: var(--text-color);
                 text-decoration: none;
-                font-size: 24px;
+                font-size: 30px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -614,9 +645,8 @@
             }
             
             .mobile-icon.icon-poster {
-                width: 34px;
-                height: 34px;
-                margin-top: 13px;
+                width: 26px;
+                height: 26px;
             }
 
             .main-content {
@@ -688,13 +718,19 @@
                 <form method="post" class="post-form" enctype="multipart/form-data">
                     {% csrf_token %}
                     <textarea name="content" class="post-input" placeholder="postea algo dale..."></textarea>
+                    <div id="post-text-preview"></div>
+                    <div class="post-input-actions">
                     <div class="image-upload">
                         <label for="image-input">
-                            📷 Agregar imagen
+                            📷
                         </label>
                         <input id="image-input" type="file" name="image" accept="image/*" style="display: none;">
                         <span id="file-name"></span>
                         <button type="button" id="removeImageButton" style="display: none;">X</button>
+                    </div>
+                    <button type="button" id="togglePreview" class="preview-toggle"> 
+                        preview
+                    </button>
                     </div>
                     <div id="preview-container">
                         <img id="preview" src="#" alt="Previsualización de la imagen">
@@ -813,7 +849,7 @@
             rightNav.classList.toggle('active');
             
             if (rightNav.classList.contains('active')) {
-                usersIcon.src = "/media/icons&art/posterCF.png";
+                usersIcon.src = "/media/icons&art/postercF.png";
             } else {
                 usersIcon.src = "/media/icons&art/posterSF.png";
             }
@@ -974,6 +1010,42 @@
 
             initializeLikeButtons(postsContainer);
         });
+
+        // ----------------------------
+        // Vista previa en tiempo real del post
+        // ----------------------------
+        const postInput = document.querySelector('.post-input');
+        const postTextPreview = document.getElementById('post-text-preview');
+        const togglePreviewBtn = document.getElementById('togglePreview');
+        let previewEnabled = false;
+        togglePreviewBtn.addEventListener('click', function() {
+            previewEnabled = !previewEnabled;
+            togglePreviewBtn.classList.toggle('active');
+            if (!previewEnabled) {
+                postTextPreview.style.display = 'none';
+            } else if (postInput.value.trim().length > 0) {
+                updatePreview();
+            }
+        });
+
+        postInput.addEventListener('input', function() {
+            if (previewEnabled) {
+                updatePreview();
+            }
+        });
+
+        function updatePreview() {
+            let text = postInput.value;
+            if (text.trim().length > 0) {
+                let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong style="display:inline">$1</strong>');
+                formatted = formatted.replace(/\n/g, '<br>');
+                postTextPreview.innerHTML = formatted;
+                postTextPreview.style.display = 'block';
+            } else {
+                postTextPreview.innerHTML = '';
+                postTextPreview.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>

@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "PP.md",
+                "file": "B2.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "PP"
+              "title": "B2"
             }
           }
         ],
@@ -192,14 +192,16 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "4e3c46b1f0a7da50",
+  "active": "a2d9204905940728",
   "lastOpenFiles": [
+    "B2.md",
+    "asdjaf.md",
+    "B3.md",
+    "j}.md",
     "B4.md",
     "PP.md",
     "POSTERS.md",
-    "B3.md",
     "FIXES & ADDS F-F-B'S.md",
-    "B5.md",
-    "B2.md"
+    "B5.md"
   ]
 }

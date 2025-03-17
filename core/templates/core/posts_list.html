@@ -12,7 +12,7 @@
             {% if request.user == post.user %}
             <div class="post-menu" style="position: relative;">
                 <button onclick="togglePostMenu({{ post.id }})" class="menu-btn" style="background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 20px;">⋮</button>
-                <div id="postMenu{{ post.id }}" class="post-menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background:rgba(38, 38, 38, 1);; border-radius: 3px; box-shadow: 0 5px 5px rgba(0,0,0,0.0); z-index: 1000;">
+                <div id="postMenu{{ post.id }}" class="post-menu-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background:rgba(38, 38, 38, 1); border-radius: 3px; box-shadow: 0 5px 5px rgba(0,0,0,0.0); z-index: 1000;">
                     <button onclick="editPost({{ post.id }})" style="display: block; width: 100%; padding: 8px 15px; border: none; background: none; color: var(--text-color); cursor: pointer; text-align: left;">Editar</button>
                     <button onclick="deletePost({{ post.id }})" style="display: block; width: 100%; padding: 8px 15px; border: none; background: none; color: #ff4444; cursor: pointer; text-align: left;">Borrar</button>
                 </div>
@@ -37,11 +37,11 @@
                     {% if post.preview_domain %}
                     <span style="font-size: 12px; color: #888;">{{ post.preview_domain }}</span>
                     {% endif %}
+                </div>
             </div>
-        </div>
-    </a>
-    {% endif %} 
-</div>
+        </a>
+        {% endif %} 
+    </div>
     <div class="post-actions">
         <button class="action-btn like-btn {% if request.user in post.likes.all %}liked{% endif %}" data-post-id="{{ post.id }}">
             <img src="/media/icons&art/{% if request.user in post.likes.all %}likeCF.png{% else %}likeSF.png{% endif %}" alt="Like" style="width: 14px; height: 14px;">
@@ -49,15 +49,15 @@
         </button>
         <button class="action-btn">
             <img src="/media/icons&art/repostSF.png" alt="Repost" style="width: 20px; height: 20px;">
-            {{ post.get_reposts_count }}
+            <span class="likes-count">{{ post.get_reposts_count }}</span>
         </button>
         <a href="{% url 'post_detail' post.id %}" class="action-btn">
             {% if request.resolver_match.url_name == 'post_detail' %}
-            <img src="/media/icons&art/commentCF.png" alt="Comment" style="width: 16px; height: 16px;">
+            <img src="/media/icons&art/commentCF.png" alt="Comment" style="width: 14px; height: 14px;">
             {% else %}
-            <img src="/media/icons&art/commentSF.png" alt="Comment" style="width: 16px; height: 16px;">
+            <img src="/media/icons&art/commentSF.png" alt="Comment" style="width: 14px; height: 14px;">
             {% endif %}
-            {{ post.get_comments_count }}
+            <span class="likes-count">{{ post.get_comments_count }}</span>
         </a>
     </div>
 </article>
@@ -82,7 +82,13 @@
 
     function editPost(postId) {
         const contentDiv = document.getElementById(`postContent${postId}`);
-        const currentContent = contentDiv.querySelector('p') ? contentDiv.querySelector('p').textContent : contentDiv.childNodes[0].textContent.trim();
+        const currentContent = contentDiv.innerHTML
+            .replace(/<strong[^>]*>/g, '**')
+            .replace(/<\/strong>/g, '**')
+            .replace(/<br>/g, '\n')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/<[^>]*>/g, '')
+            .trim();
         
         const textarea = document.createElement('textarea');
         textarea.value = currentContent;
@@ -178,8 +184,8 @@
     });
 
     function formatTextPreview(textarea) {
-            const preview = document.createElement('div');
-            preview.style.cssText = `
+        const preview = document.createElement('div');
+        preview.style.cssText = `
             position: absolute;
             top: ${textarea.offsetTop}px;
             left: ${textarea.offsetLeft}px;
@@ -193,11 +199,10 @@
             color: var(--text-color);
         `;
 
-            let text = textarea.value;
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            preview.innerHTML = text;
+        let text = textarea.value;
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        preview.innerHTML = text;
 
-            return preview;
-        }
-
+        return preview;
+    }
 </script>

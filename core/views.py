@@ -3,6 +3,11 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from .models import User, Post, Comment
+import re
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+from django.core.paginator import Paginator
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -28,12 +33,6 @@ def login_view(request):
             except:
                 return render(request, 'core/login.html', {'error': 'si sos nuevo lo que pasa es que ese user ya existe, si te queres logear pasa que te equivocaste de contraseña manin'})
     return render(request, 'core/login.html')
-
-
-import re
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse
 
 def get_preview_data(url):
     try:
@@ -63,9 +62,6 @@ def get_preview_data(url):
         }
     except:
         return None
-    
-
-from django.core.paginator import Paginator
 
 def format_content(content):
     import re
@@ -76,7 +72,7 @@ def format_content(content):
         lines[i] = ' '.join(lines[i].split())
     content = '<br>'.join(lines)
     return f'<span style="white-space:normal">{content}</span>'
-      
+
 @login_required
 def home(request):
     if request.method == 'POST':
@@ -120,11 +116,9 @@ def logout_view(request):
 
 @login_required
 def follow_view(request, username):
-
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
     
-
     to_follow = get_object_or_404(User, username=username)
 
     if request.user != to_follow:
@@ -214,7 +208,6 @@ def profile_view(request, username):
         return redirect('home')
 
     if request.method == 'POST':
-        
         if 'new_username' in request.POST and request.user == profile_user:
             new_username = request.POST['new_username']
             if User.objects.filter(username=new_username).exists():
@@ -264,11 +257,14 @@ def edit_post(request, post_id):
         content = request.POST.get('content')
         image = request.FILES.get('image')
         if content or image:
-            post.content = content
+            urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', content)
+            clean_content = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', content).strip()
+            formatted_content = format_content(clean_content) if clean_content else ' '
+            post.content = formatted_content
             if image:
                 post.image = image
             post.save()
-        return JsonResponse({'success': True, 'content': content})
+        return JsonResponse({'success': True, 'content': formatted_content})
     return HttpResponseNotAllowed(['POST'])
 
 @login_required

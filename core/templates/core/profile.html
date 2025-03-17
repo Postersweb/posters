@@ -347,7 +347,8 @@
 
         .mobile-nav {
             display: none;
-            border: 1px solid var(--border-color);
+            border: none;
+            border-top: 1px solid var(--border-color);
         }
 
         .link-preview {
@@ -562,6 +563,7 @@
             .mobile-nav {
                 display: flex;
                 position: fixed;
+                height: 48px;
                 bottom: 0;
                 left: 0;
                 width: 100%;
@@ -574,7 +576,7 @@
             .mobile-nav a {
                 color: var(--text-color);
                 text-decoration: none;
-                font-size: 24px;
+                font-size: 30px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -602,9 +604,8 @@
             }
 
             .mobile-icon.icon-poster {
-                width: 34px;
-                height: 34px;
-                margin-top: 13px;
+                width: 26px;
+                height: 26px;
             }
 
             .main-content {
